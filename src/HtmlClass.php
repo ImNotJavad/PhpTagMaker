@@ -5,6 +5,7 @@ namespace AhjDev\PhpTagMaker;
 use Countable;
 use Stringable;
 use IteratorAggregate;
+use Traversable; // For Generator type hint
 
 final class HtmlClass implements Stringable, IteratorAggregate, Countable
 {
@@ -12,7 +13,9 @@ final class HtmlClass implements Stringable, IteratorAggregate, Countable
 
     public function __construct(string ...$classes)
     {
-        $this->classList = array_map(static fn ($e) => trim($e), $classes);
+        // Trim and filter empty classes, then ensure uniqueness
+        $trimmedClasses = array_map(static fn ($e) => trim($e), $classes);
+        $this->classList = array_values(array_unique(array_filter($trimmedClasses)));
     }
 
     public function __toString(): string
@@ -28,6 +31,7 @@ final class HtmlClass implements Stringable, IteratorAggregate, Countable
     public function add(string $class): self
     {
         $class = trim($class);
+        // Add only if it's not empty and not already present
         if (!(empty($class) || $this->has($class))) {
             $this->classList[] = $class;
         }
@@ -36,28 +40,49 @@ final class HtmlClass implements Stringable, IteratorAggregate, Countable
 
     public function remove(string $class): self
     {
-        if (($pos = array_search(trim($class), $this->classList, true)) !== false) {
+        $class = trim($class);
+        if (($pos = array_search($class, $this->classList, true)) !== false) {
             unset($this->classList[$pos]);
+            $this->classList = array_values($this->classList); // Re-index array
+        }
+        return $this;
+    }
+
+    /**
+     * Toggles a class: adds it if not present, removes it if present.
+     * @param string $class The class name to toggle.
+     */
+    public function toggle(string $class): self
+    {
+        $class = trim($class);
+        if (empty($class)) {
+            return $this;
+        }
+
+        if ($this->has($class)) {
+            $this->remove($class);
+        } else {
+            $this->add($class);
         }
         return $this;
     }
 
     public function merge(string|self ...$classes): self
     {
-        foreach ($classes as $class) {
-            if ($class instanceof self) {
-                $this->classList = array_merge($this->classList, $class->asArray());
-                array_shift($classes);
+        $newClasses = [];
+        foreach ($classes as $classInput) {
+            if ($classInput instanceof self) {
+                $newClasses = array_merge($newClasses, $classInput->asArray());
+            } elseif (is_string($classInput)) {
+                // Split string by space in case multiple classes are passed in one string
+                $parts = array_map('trim', explode(' ', $classInput));
+                $newClasses = array_merge($newClasses, array_filter($parts));
             }
         }
-        // leftover strings
-        if ($classes) {
-            $this->classList = array_merge(
-                $this->classList,
-                array_map(static fn ($e) => trim($e), $classes)
-            );
+
+        foreach($newClasses as $nc) {
+            $this->add($nc); // Use add to ensure uniqueness and trimming
         }
-        $this->classList = array_filter($this->classList);
         return $this;
     }
 
@@ -71,8 +96,11 @@ final class HtmlClass implements Stringable, IteratorAggregate, Countable
         return count($this->classList);
     }
 
-    public function getIterator(): \Generator
+    /**
+     * @return Traversable<int, string>
+     */
+    public function getIterator(): Traversable // Changed from \Generator to Traversable for broader compatibility
     {
-        return yield from $this->classList;
+        yield from $this->classList;
     }
 }
