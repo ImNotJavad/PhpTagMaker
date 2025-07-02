@@ -2,25 +2,52 @@
 
 namespace AhjDev\PhpTagMaker\Node;
 
-use DOMText;
 use AhjDev\PhpTagMaker\Node;
+use DOMDocument;
+use DOMText;
 
+/**
+ * Represents a plain text node within the HTML structure.
+ *
+ * When rendered, the content of this node will be properly escaped by the
+ * underlying DOMDocument to prevent XSS attacks and ensure well-formed HTML.
+ */
 final class HtmlText extends Node
 {
-    private DOMText $domText;
+    /**
+     * @var string The raw text content for this node.
+     */
+    private string $text;
 
+    /**
+     * HtmlText constructor.
+     *
+     * @param string $text The raw text content for this node.
+     */
     public function __construct(string $text)
     {
-        $this->domText = new DOMText($text);
+        $this->text = $text;
     }
 
-    public static function make($text): self
+    /**
+     * Static factory method for creating an HtmlText instance.
+     *
+     * @param string $text The raw text content.
+     */
+    public static function make(string $text): self
     {
         return new self($text);
     }
 
-    public function toDomNode(): DOMText
+    /**
+     * Returns the underlying DOMText node.
+     *
+     * @param DOMDocument|null $doc The parent DOMDocument.
+     */
+    public function toDomNode(?DOMDocument $doc = null): DOMText
     {
-        return $this->domText;
+        // The DOMDocument context is not strictly needed to create a DOMText,
+        // but we accept the parameter to maintain a consistent method signature.
+        return new DOMText($this->text);
     }
 }

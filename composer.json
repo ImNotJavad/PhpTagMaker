@@ -1,18 +1,20 @@
 {
-    "name"       : "ahjdev/phptagmaker",
+    "name": "ahjdev/phptagmaker",
     "description": "Create html tags by php",
-    "license"    : "GPL-3.0-only",
-    "keywords"   : [
+    "license": "GPL-3.0-only",
+    "keywords": [
         "php",
         "html",
-        "tag"
+        "tag",
+        "builder"
     ],
     "authors": [
         {
-            "name" : "AmirHossein Jafari",
+            "name": "AmirHossein Jafari",
             "email": "amirhosseinjafari8228@gmail.com"
-        },{
-             "name" : "Seyed Mohammad Javad Mousavi",
+        },
+        {
+            "name": "Seyed Mohammad Javad Mousavi",
             "email": "mou17savi@gmail.com"
         }
     ],
@@ -22,17 +24,19 @@
         }
     },
     "require": {
-        "ext-dom"  : "*"
+        "php": "^8.0",
+        "ext-dom": "*"
     },
     "require-dev": {
         "amphp/php-cs-fixer-config": "^2",
-        "phpunit/phpunit": "^12.2"
+        "phpunit/phpunit": "^10.0 || ^11.0",
+        "phpstan/phpstan": "^1.10"
     },
     "scripts": {
-        "build": [
-            "@cs-fix"
-        ],
-        "cs"    : "php -d pcre.jit=0 vendor/bin/php-cs-fixer fix -v --diff --dry-run",
-        "cs-fix": "php -d pcre.jit=0 vendor/bin/php-cs-fixer fix -v --diff"
+        "test": "./vendor/bin/phpunit",
+        "test:coverage": "./vendor/bin/phpunit --coverage-html coverage",
+        "cs": "php -d pcre.jit=0 vendor/bin/php-cs-fixer fix -v --diff --dry-run",
+        "cs-fix": "php -d pcre.jit=0 vendor/bin/php-cs-fixer fix -v --diff",
+        "analyse": "./vendor/bin/phpstan analyse src tests --level=8"
     }
 }

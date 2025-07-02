@@ -2,14 +2,15 @@
 
 namespace AhjDev\PhpTagMaker\Node;
 
-use DOMElement;
-use AhjDev\PhpTagMaker\Node;
 use AhjDev\PhpTagMaker\HtmlClass;
+use AhjDev\PhpTagMaker\Node;
+use DOMElement;
+use LogicException;
 
 /**
- * Represents a single HTML element.
+ * Represents a single HTML element (e.g., <div>, <p>, <a>).
  *
- * This is the core class for building HTML structures, providing methods
+ * This is the core class for building HTML structures, providing fluent methods
  * for attribute management, child manipulation, and rendering to a DOM node.
  */
 final class HtmlTag extends Node
@@ -17,80 +18,156 @@ final class HtmlTag extends Node
     use Internal\Attributes;
     use Internal\DefaultTags;
 
-    /** @var list<Node> */
+    /**
+     * @var string The name of the HTML tag (e.g., 'div', 'p').
+     */
+    private string $tag;
+
+    /**
+     * @var Node[] A list of child nodes (HtmlTag, HtmlText, etc.).
+     */
     private array $values = [];
 
-    public HtmlClass $class;
+    /**
+     * A set of HTML5 tags that cannot have any content (e.g., <br>, <img>).
+     * @var string[]
+     */
+    private const VOID_ELEMENTS = [
+        'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+        'link', 'meta', 'param', 'source', 'track', 'wbr'
+    ];
 
-    private array $attributes = [];
-
-    public function __construct(private string $tag, Node|string ...$value)
+    /**
+     * HtmlTag constructor.
+     *
+     * @param string $tag The name of the HTML tag.
+     * @param Node|string ...$value Initial children for the tag. Strings are auto-converted to HtmlText nodes.
+     */
+    public function __construct(string $tag, Node|string ...$value)
     {
-        $this->values = array_map(static fn ($v) => is_string($v) ? new HtmlText($v) : $v, $value);
-        $this->class = new HtmlClass;
+        $this->tag = $tag;
+        $this->class = new HtmlClass(); // Initialize the class manager.
+        $this->attributes = [];       // Initialize attributes array.
+
+        // Append initial children, checking for void elements.
+        foreach ($value as $v) {
+            $this->appendChild($v);
+        }
     }
 
+    /**
+     * Static factory method for creating an HtmlTag instance.
+     *
+     * @param string $tag The name of the HTML tag.
+     * @param Node|string ...$value Initial children for the tag.
+     */
     public static function make(string $tag, Node|string ...$value): self
     {
         return new self($tag, ...$value);
     }
 
+    /**
+     * Gets the name of the tag.
+     *
+     */
     public function getName(): string
     {
         return $this->tag;
     }
 
     /**
-     * Summary of setName
-     * @param string $newTagName
-     * @return Node\HtmlTag
+     * Changes the name of the tag.
+     *
+     * Attributes and children are preserved.
+     *
+     * @param string $newTagName The new tag name (e.g., 'section').
+     * @return self The current instance for method chaining.
      */
     public function setName(string $newTagName): self
     {
         $this->tag = $newTagName;
         return $this;
     }
+
     /**
-     * Appends a child Node or string to this tag.
-     * If a string is provided, it will be wrapped in an HtmlText node.
+     * Appends a child Node to this tag.
+     *
+     * Strings are automatically wrapped in an HtmlText node.
      *
      * @param Node|string $child The child to append.
-     * @return self Returns the instance for method chaining.
+     * @return self The current instance for method chaining.
+     * @throws LogicException If attempting to add a child to a void element.
      */
     public function appendChild(Node|string $child): self
     {
-        $node = is_string($child) ? new HtmlText($child) : $child;
-        $this->values[] = $node;
+        if ($this->isVoidElement()) {
+            throw new LogicException("Cannot add children to a void element <{$this->tag}>.");
+        }
+        $this->values[] = \is_string($child) ? new HtmlText($child) : $child;
         return $this;
     }
 
+    /**
+     * Prepends a child Node to this tag.
+     *
+     * Strings are automatically wrapped in an HtmlText node.
+     *
+     * @param Node|string $child The child to prepend.
+     * @return self The current instance for method chaining.
+     * @throws LogicException If attempting to add a child to a void element.
+     */
     public function prependChild(Node|string $child): self
     {
-        $node = is_string($child) ? new HtmlText($child) : $child;
-        array_unshift($this->values, $node);
+        if ($this->isVoidElement()) {
+            throw new LogicException("Cannot add children to a void element <{$this->tag}>.");
+        }
+        \array_unshift($this->values, \is_string($child) ? new HtmlText($child) : $child);
         return $this;
     }
 
+    /**
+     * Converts the HtmlTag instance to a DOMElement.
+     *
+     * This method builds the element, sets its attributes, and appends all its children recursively.
+     *
+     * @param \DOMDocument|null $doc The parent DOMDocument, if available.
+     */
     public function toDomNode(?\DOMDocument $doc = null): DOMElement
     {
         $document = $doc ?? new \DOMDocument();
         $element = $document->createElement($this->tag);
 
+        // Set all generic attributes.
         foreach ($this->attributes as $name => $value) {
-            $element->setAttribute($name, $value);
+            $element->setAttribute($name, (string) $value);
         }
 
+        // Set the class attribute if any classes are present.
         if ($this->class->count() > 0) {
             $element->setAttribute('class', (string) $this->class);
         }
 
-        foreach ($this->values as $valueNode) {
-            $childDomNode = $valueNode->toDomNode($document);
-            if ($childDomNode->ownerDocument !== $document) {
-                $childDomNode = $document->importNode($childDomNode, true);
+        // Recursively append all child nodes, but only if it's not a void element.
+        if (!$this->isVoidElement()) {
+            foreach ($this->values as $valueNode) {
+                // Import the node if it belongs to a different document context.
+                $childDomNode = $valueNode->toDomNode($document);
+                if ($childDomNode->ownerDocument !== $document) {
+                    $childDomNode = $document->importNode($childDomNode, true);
+                }
+                $element->appendChild($childDomNode);
             }
-            $element->appendChild($childDomNode);
         }
+
         return $element;
+    }
+
+    /**
+     * Checks if the current tag is a void element.
+     *
+     */
+    private function isVoidElement(): bool
+    {
+        return \in_array(\strtolower($this->tag), self::VOID_ELEMENTS, true);
     }
 }

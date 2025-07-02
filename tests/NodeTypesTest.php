@@ -6,54 +6,55 @@ use AhjDev\PhpTagMaker\Node\EscapedText;
 use AhjDev\PhpTagMaker\Node\HtmlTag;
 use AhjDev\PhpTagMaker\Node\HtmlTagMulti;
 use AhjDev\PhpTagMaker\Node\HtmlText;
+use AhjDev\PhpTagMaker\TagMaker;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Unit tests for the different Node types (HtmlText, EscapedText, HtmlTagMulti).
+ *
+ * @covers \AhjDev\PhpTagMaker\Node\HtmlText
+ * @covers \AhjDev\PhpTagMaker\Node\EscapedText
+ * @covers \AhjDev\PhpTagMaker\Node\HtmlTagMulti
+ */
 final class NodeTypesTest extends TestCase
 {
+    /**
+     * Tests that HtmlText correctly escapes special HTML characters when rendered.
+     */
     public function testHtmlTextRendersAndEscapesCorrectlyInParent(): void
     {
-        $tag = HtmlTag::make('p', new HtmlText('5 > 3'));
+        $tag = HtmlTag::p(new HtmlText('5 > 3 & 2 < 4'));
+        $output = TagMaker::build($tag);
 
-        $node = $tag->toDomNode();
-        $output = $node->ownerDocument->saveHTML($node);
-
-        $expected = '<p>5 &gt; 3</p>';
+        // DOMDocument will escape '<', '>', and '&'.
+        $expected = '<p>5 &gt; 3 &amp; 2 &lt; 4</p>';
         $this->assertXmlStringEqualsXmlString($expected, $output);
     }
 
     /**
-     * This is the corrected test for CDATA sections.
-     * Instead of comparing strings, we inspect the DOM structure directly.
+     * Tests that EscapedText correctly creates a CDATA section, preventing
+     * the content from being parsed by the HTML parser.
      */
     public function testEscapedTextCreatesCdataNodeInParent(): void
     {
-        // Arrange
-        $tag = HtmlTag::make('div', new EscapedText('if (a < b) {}'));
+        // FIX: The first argument to `div()` is reserved for classes.
+        // Pass `null` as the first argument to specify no class, and the
+        // EscapedText node as the second argument (a child).
+        $tag = HtmlTag::div(null, new EscapedText('if (a < b && b > c) { /* code */ }'));
 
-        // Act
         $domNode = $tag->toDomNode();
 
-        // Assert
-        // 1. Check that the div has exactly one child node.
         $this->assertTrue($domNode->hasChildNodes());
         $this->assertEquals(1, $domNode->childNodes->length);
-
-        // 2. Get the first child.
         $firstChild = $domNode->firstChild;
-
-        // 3. Assert that the child is a CDATA Section node.
         $this->assertInstanceOf(\DOMCdataSection::class, $firstChild);
-
-        // 4. Assert that the content of the CDATA node is correct.
-        $this->assertEquals('if (a < b) {}', $firstChild->nodeValue);
+        $this->assertEquals('if (a < b && b > c) { /* code */ }', $firstChild->nodeValue);
     }
 
     public function testHtmlTagMultiCreatesNestedStructure(): void
     {
         $multiTag = new HtmlTagMulti(['div', 'p', 'strong'], 'Deep Text');
-
-        $node = $multiTag->toDomNode();
-        $output = $node->ownerDocument->saveHTML($node);
+        $output = TagMaker::build($multiTag);
 
         $expected = '<div><p><strong>Deep Text</strong></p></div>';
         $this->assertXmlStringEqualsXmlString($expected, $output);
@@ -66,9 +67,7 @@ final class NodeTypesTest extends TestCase
             HtmlTag::b('Title'),
             ' and text'
         );
-
-        $node = $multiTag->toDomNode();
-        $output = $node->ownerDocument->saveHTML($node);
+        $output = TagMaker::build($multiTag);
 
         $expected = '<section><article><b>Title</b> and text</article></section>';
         $this->assertXmlStringEqualsXmlString($expected, $output);

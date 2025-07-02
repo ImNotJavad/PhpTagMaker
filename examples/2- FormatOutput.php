@@ -1,5 +1,8 @@
 <?php
 
+// This example demonstrates how to format the HTML output for readability
+// and showcases the different types of nodes available.
+
 require __DIR__ . '/../vendor/autoload.php';
 
 use AhjDev\PhpTagMaker\TagMaker;
@@ -8,62 +11,49 @@ use AhjDev\PhpTagMaker\Node\HtmlText;
 use AhjDev\PhpTagMaker\Node\EscapedText;
 use AhjDev\PhpTagMaker\Node\HtmlTagMulti;
 
+// 1. Create an instance of the TagMaker.
 $maker = new TagMaker();
-$output = $maker
-    ->formatOutput()
-    ->run(
-        HtmlTag::span(
-            HtmlTag::a(
-                'github.com/ahjdev',
-                'My Github',
-            ),
-            'Can also use a string',
-            HtmlTag::ul(
-                HtmlTag::li('one'),
-                HtmlTag::li('two'),
-                HtmlTag::li('three')->setClass('Class 1', 'Class 2'),
-            ),
-            HtmlText::make('<a> without escape'),
-            HtmlTag::br(),
-            EscapedText::make('<a> with escape'),
-            HtmlTag::br(),
-            HtmlTagMulti::make(['a', 'b', 'code'], 'Multi tag'),
-            HtmlTag::br(),
-            HtmlTagMulti::make(
-                ['c', 'r', 'y'],
-                HtmlTag::b('inside tag'),
-                ' ',
-                'Just text'
-            )
+
+// 2. Enable output formatting. This adds indentation and newlines.
+// This is great for development but should be disabled in production.
+$maker->formatOutput(true);
+
+// 3. Build a complex HTML structure.
+$output = $maker->run(
+    HtmlTag::div('wrapper',
+        HtmlTag::h1('Demonstration of Node Types'),
+
+        // A standard link.
+        HtmlTag::a('https://github.com/ahjdev/phptagmaker', 'Project on GitHub'),
+
+        // An unordered list with children.
+        HtmlTag::ul(
+            HtmlTag::li('First item'),
+            HtmlTag::li('Second item'),
+            HtmlTag::li('Third item')->setClass('special-item')
+        ),
+
+        // Using HtmlText to explicitly create a text node.
+        // The '<' and '>' will be escaped automatically to '&lt;' and '&gt;'.
+        HtmlTag::p(
+            HtmlText::make('This text contains special characters like < and >.')
+        ),
+
+        // Using EscapedText to create a CDATA section.
+        // The content inside will NOT be parsed by the browser.
+        // Useful for inline scripts or style blocks.
+        HtmlTag::script(
+            EscapedText::make("if (x < 5 && y > 2) { console.log('CDATA works!'); }")
+        ),
+
+        // Using HtmlTagMulti to create a deeply nested structure easily.
+        HtmlTag::p('A multi-tag structure:'),
+        HtmlTagMulti::make(
+            ['div', 'blockquote', 'p', 'strong'],
+            'This text is deeply nested.'
         )
-    );
+    )
+);
+
+// 4. Print the formatted HTML.
 print($output);
-
-$myTag = HtmlTag::make('myTag', 'myValue');
-// Set attribute
-$myTag->setAttribute('foo1', 'bar');
-$myTag->setAttribute('foo2', 'baz');
-
-// Get value of attribute
-var_dump($myTag->getAttribute('foo1')); // bar
-
-// Remove attribute
-$myTag->removeAttribute('foo1');
-
-// Whether attribute exists
-var_dump($myTag->hasAttribute('foo1')); // false
-var_dump($myTag->hasAttribute('foo2')); // true
-
-// Set attribute directly
-$myTag->setId('myid');
-// Set class directly
-$myTag->setClass('blah');
-// Change tag name (Can check with getName method)
-$myTag->setName('h1');
-
-// Iterate attributes
-foreach ($myTag->iterAttributes() as $attr) {
-    // $attr is instanceof DOMAttr
-    // var_dump($attr);
-}
-print($maker->run($myTag));

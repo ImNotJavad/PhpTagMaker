@@ -1,67 +1,61 @@
-# PhpTagMaker (Enhanced Version)
+# PhpTagMaker Library
 
-**PhpTagMaker** is a fluent and powerful PHP library for programmatically building HTML strings. It leverages `DOMDocument` behind the scenes, ensuring well-formed and valid HTML output. This enhanced version includes significant improvements for advanced attribute management, child manipulation, and overall flexibility.
+**PhpTagMaker** is a fluent and powerful PHP library for programmatically building HTML strings. It leverages `DOMDocument` behind the scenes, ensuring well-formed, valid, and secure output. This enhanced version includes advanced features for attribute management, child manipulation, and overall flexibility.
 
-[![License: GPL-3.0-only](https://img.shields.io/badge/License-GPL--3.0--only-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
-[![PHP Version Support](https://img.shields.io/packagist/php/ahjdev/phptagmaker)](https://packagist.org/packages/ahjdev/phptagmaker) ## Table of Contents
+## Table of Contents
 
-- [PhpTagMaker (Enhanced Version)](#phptagmaker-enhanced-version)
+- [PhpTagMaker Library](#phptagmaker-library)
+  - [Table of Contents](#table-of-contents)
   - [Key Features](#key-features)
+  - [Requirements](#requirements)
   - [Installation](#installation)
   - [Quick Start](#quick-start)
+  - [Security](#security)
   - [Core Concepts](#core-concepts)
-    - [TagMaker](#tagmaker)
-    - [HtmlTag](#htmltag)
-    - [Node Types](#node-types)
-    - [HtmlClass](#htmlclass)
-  - [Advanced Usage](#advanced-usage)
+    - [`TagMaker`](#tagmaker)
+    - [`HtmlTag`](#htmltag)
+    - [Node Types (`Node`)](#node-types-node)
+    - [`HtmlClass`](#htmlclass)
+  - [API Documentation \& Advanced Usage](#api-documentation--advanced-usage)
     - [Creating Tags](#creating-tags)
-      - [Static Helper Methods](#static-helper-methods)
-      - [HtmlTag Constructor](#htmltag-constructor)
     - [Managing Children](#managing-children)
-      - [Adding at Construction](#adding-at-construction)
-      - [`appendChild()` and `prependChild()`](#appendchild-and-prependchild)
-    - [Attribute Management](#attribute-management)
-      - [Generic Attributes (`setAttribute`, `getAttribute`, `hasAttribute`, `removeAttribute`)](#generic-attributes-setattribute-getattribute-hasattribute-removeattribute)
-      - [ID (`setId`, `getId`)](#id-setid-getid)
-      - [CSS Classes (`setClass`, `addClass`, `removeClass`, `toggleClass`, Class Instance Management)](#css-classes-setclass-addclass-removeclass-toggleclass-class-instance-management)
-      - [Boolean Attributes (`setBooleanAttribute`, `disabled`, `checked`)](#boolean-attributes-setbooleanattribute-disabled-checked)
-      - [Data Attributes (`setDataAttribute`, `getDataAttribute`, `removeDataAttribute`, `hasDataAttribute`)](#data-attributes-setdataattribute-getdataattribute-removedataattribute-hasdataattribute)
-      - [ARIA Attributes (`setAriaAttribute`, `getAriaAttribute`, `removeAriaAttribute`, `hasAriaAttribute`)](#aria-attributes-setariaattribute-getariaattribute-removeariaattribute-hasariaattribute)
-      - [Iterating Attributes (`iterAttributes`)](#iterating-attributes-iterattributes)
-    - [Changing Tag Name (`setName`)](#changing-tag-name-setname)
+    - [Managing Attributes](#managing-attributes)
+      - [Generic Attributes](#generic-attributes)
+      - [The `id` Attribute](#the-id-attribute)
+      - [CSS Classes](#css-classes)
+      - [Boolean Attributes](#boolean-attributes)
+      - [`data-*` Attributes](#data--attributes)
+      - [`aria-*` Attributes](#aria--attributes)
+    - [Changing the Tag Name](#changing-the-tag-name)
     - [Output Formatting](#output-formatting)
-    - [Specialized Nodes](#specialized-nodes)
-      - [`HtmlText` (Unscaped Text)](#htmltext-unscaped-text)
-      - [`EscapedText` (CDATA)](#escapedtext-cdata)
-      - [`HtmlTagMulti` (Nested Tags)](#htmltagmulti-nested-tags)
   - [Examples](#examples)
-  - [Contributing](#contributing)
+  - [Contributing Guide](#contributing-guide)
   - [License](#license)
 
 ## Key Features
 
-* **Fluent Interface**: Chain methods to build complex HTML structures intuitively.
-* **DOM-Powered**: Uses `DOMDocument` internally for robust and well-formed HTML generation.
-* **Comprehensive Tag Support**: Includes static helper methods for most standard HTML5 tags.
-* **Advanced Attribute Control**:
-    * Generic, ID, Class, Boolean, Data, and ARIA attributes.
-    * Powerful `HtmlClass` object for managing CSS classes.
-* **Flexible Child Management**: Add children during construction, or append/prepend them later.
-* **Text Node Handling**: Supports unescaped text (`HtmlText`) and CDATA sections for escaped content (`EscapedText`).
-* **Output Formatting**: Option to nicely format the HTML output with indentation.
-* **Extensible**: Based on an abstract `Node` class, allowing for custom node types if needed.
-* **Modern PHP**: Uses strict types and modern PHP features.
+* **Fluent Interface**: Build complex HTML structures in a readable, chainable way.
+* **DOM-Powered**: Uses `DOMDocument` to generate standard and valid HTML.
+* **Full Tag Support**: Includes static helper methods for most standard HTML5 tags.
+* **Advanced Attribute Control**: Full management of generic, `id`, `class`, Boolean, `data-*`, and `aria-*` attributes.
+* **Flexible Child Management**: Add children at creation time or with `appendChild` and `prependChild` methods.
+* **Smart Error Handling**: Prevents adding children to void elements (like `<img>`).
+* **Built-in Security**: Prevents XSS attacks by automatically escaping text content.
+* **Output Formatting**: Option for readable, indented HTML output for easier debugging.
+* **Modern Coding**: Uses strict types and modern PHP features.
+
+## Requirements
+
+* PHP 8.0 or higher
+* `ext-dom` extension
 
 ## Installation
 
-You can install PhpTagMaker via [Composer](https://getcomposer.org/):
+You can install the library via [Composer](https://getcomposer.org/):
 
 ```bash
 composer require ahjdev/phptagmaker
 ````
-
-*(Note: Replace `ahjdev/phptagmaker` with your actual package name if you fork and publish it under a different name.)*
 
 ## Quick Start
 
@@ -72,348 +66,227 @@ require __DIR__ . '/vendor/autoload.php';
 
 use AhjDev\PhpTagMaker\TagMaker;
 use AhjDev\PhpTagMaker\Node\HtmlTag;
-use AhjDev\PhpTagMaker\HtmlClass; //
 
-// Simple build
+// Build a simple HTML structure
 $output = TagMaker::build(
-    HtmlTag::div( //
-        'my-class-name another-class', //
-        HtmlTag::h1('Hello, PhpTagMaker!'),
+    HtmlTag::div(
+        'container main-content', // CSS classes
+        HtmlTag::h1('Welcome to PhpTagMaker!'),
         HtmlTag::p(
-            'This is a paragraph with a ',
-            HtmlTag::a('[https://example.com](https://example.com)', 'link')->setId('my-link')->setDataAttribute('target', 'new-window')
+            'This is a simple paragraph with a ',
+            HtmlTag::a('[https://example.com](https://example.com)', 'link')->setId('my-link')
         )->addClass('content')
     ),
-    true // Format output
+    true // Enable output formatting
 );
 
 echo $output;
 ```
 
+
 Expected Output:
 
 ```html
-<div>
-  <h1 class="my-class-name another-class">Hello, PhpTagMaker!</h1>
-  <p class="content">This is a paragraph with a <a href="[https://example.com](https://example.com)" id="my-link" data-target="new-window">link</a></p>
+<div class="container main-content">
+  <h1>Welcome to PhpTagMaker!</h1>
+  <p class="content">This is a simple paragraph with a <a href="[https://example.com](https://example.com)" id="my-link">link</a></p>
 </div>
 ```
 
-*(Output structure might vary slightly based on exact implementation of class handling on the parent div in the example)*
+## Security
+
+This library helps mitigate Cross-Site Scripting (XSS) vulnerabilities by default.
+
+  * **Automatic Escaping**: By using `DOMDocument`, all text content added via `HtmlText` nodes or plain strings is automatically escaped (e.g., `<` becomes `&lt;`).
+  * **CDATA Sections**: For content that should not be parsed by the HTML parser (like inline scripts), you can use the `EscapedText` node, which wraps the content in `<![CDATA[...]]>`.
+
+**Your Responsibility**: Despite the built-in security, you must still be cautious. Never pass untrusted user input directly into attributes that can execute code (like `href` with `javascript:` values or `onclick` events). Always validate and sanitize user input before using it in such attributes.
 
 ## Core Concepts
 
-### TagMaker
+### `TagMaker`
 
-The `TagMaker` class is the main entry point for generating the final HTML string.
+This is the main engine of the library that transforms the node structure into the final HTML string.
 
-  * `new TagMaker()`: Creates an instance.
-  * `formatOutput(bool $option = true)`: Enables or disables formatted HTML output.
-  * `run(Node $node)`: Processes the given `Node` (usually an `HtmlTag`) and returns the HTML string.
-  * `TagMaker::build(Node $node, bool $format = false)`: A static helper to quickly create a `TagMaker` instance, configure formatting, and run it.
+  * `TagMaker::build(Node $node, bool $format = false)`: A static method for quickly building HTML.
+  * `$maker->run(Node $node)`: Processes the node and generates the output.
+  * `$maker->formatOutput(true)`: Enables output formatting.
 
-### HtmlTag
+### `HtmlTag`
 
-`HtmlTag` represents an HTML element. It's the most commonly used node type.
+This class represents an HTML tag and is the most frequently used node in the library.
 
-  * `HtmlTag::make(string $tag, Node|string ...$value)`: Static factory method.
-  * `new HtmlTag(string $tag, Node|string ...$value)`: Constructor.
-  * It uses the `Attributes` trait for attribute manipulation and `DefaultTags` trait for static helpers (e.g., `HtmlTag::div()`).
+  * `HtmlTag::div(...)`, `HtmlTag::p(...)`, etc.: Static helper methods for quickly creating tags.
+  * `HtmlTag::make('tag', ...)`: Another way to create a tag.
 
-### Node Types
+### Node Types (`Node`)
 
-All elements generated by PhpTagMaker extend the abstract `Node` class.
-Each `Node` must implement the `toDomNode()` method, which converts it into a `\DOMNode` object.
+All elements inherit from the `Node` class.
 
-  * `HtmlTag`: Represents a standard HTML element.
-  * `HtmlText`: Represents a plain text node (special HTML characters will be escaped by `DOMDocument` on output).
-  * `EscapedText`: Represents a CDATA section, useful for embedding content that should not be parsed (e.g., inline scripts or styles, though dedicated tags are better).
-  * `HtmlTagMulti`: A utility to create a deeply nested structure of tags with a single content.
+  * **`HtmlTag`**: A standard HTML tag.
+  * **`HtmlText`**: A simple text node whose special characters are automatically escaped.
+  * **`EscapedText`**: A CDATA section whose content is not processed by the parser.
+  * **`HtmlTagMulti`**: A tool for quickly creating deeply nested structures.
 
-### HtmlClass
+### `HtmlClass`
 
-The `HtmlClass` class provides a convenient way to manage an element's CSS classes.
+A powerful helper class for managing the CSS classes of a tag. It provides methods for adding (`add`), removing (`remove`), toggling (`toggle`), and merging (`merge`) classes, and prevents duplicates.
 
-  * `new HtmlClass(string ...$classes)`: Constructor.
-  * `add(string $class)`: Adds a class if not present.
-  * `remove(string $class)`: Removes a class if present.
-  * `toggle(string $class)`: Adds a class if absent, removes it if present.
-  * `has(string $class)`: Checks if a class exists.
-  * `merge(string|self ...$classes)`: Merges classes from strings or other `HtmlClass` instances.
-  * `__toString()`: Returns the space-separated string of classes.
-  * Implements `Countable` and `IteratorAggregate`.
-
-## Advanced Usage
+## API Documentation & Advanced Usage
 
 ### Creating Tags
 
-#### Static Helper Methods
-
-The `HtmlTag` class (via the `DefaultTags` trait) provides static factory methods for all common HTML tags. This is often the most convenient way to create tags.
+**1. Using static helper methods (recommended method):**
 
 ```php
 use AhjDev\PhpTagMaker\Node\HtmlTag;
 
-$div = HtmlTag::div('This is a div.');
+$div = HtmlTag::div('container', 'Div content');
 $link = HtmlTag::a('[https://example.com](https://example.com)', 'Click here');
-$image = HtmlTag::img('/path/to/image.jpg', null, null, 'Alternative text'); // src, height, width, alt
-$input = HtmlTag::input('text')->setAttribute('placeholder', 'Enter text...'); //
+$image = HtmlTag::img('/image.jpg', 'Alternative text');
 ```
 
-The first argument to tag methods that accept content can be a string, another `Node` object, or an `HtmlClass` instance (specifically for `div` and some others).
-
-#### HtmlTag Constructor
-
-You can also use `HtmlTag::make()` or `new HtmlTag()` directly.
+**2. Using `make` or the main constructor:**
 
 ```php
-use AhjDev\PhpTagMaker\Node\HtmlTag;
-
 $customTag = HtmlTag::make('my-custom-tag', 'Content');
-$paragraph = new HtmlTag('p', 'This is a paragraph node.');
+$paragraph = new HtmlTag('p', 'A new paragraph.');
 ```
 
 ### Managing Children
 
-#### Adding at Construction
-
-Pass child nodes or strings as subsequent arguments to the constructor or static factory methods:
+**1. Adding children at creation time:**
 
 ```php
 $article = HtmlTag::article(
     HtmlTag::h1('Article Title'),
     HtmlTag::p('First paragraph.'),
-    'This is a simple string child.',
-    HtmlTag::p('Another paragraph.')
+    'This is a simple text as a child.'
 );
 ```
 
-#### `appendChild()` and `prependChild()`
-
-You can add children to an `HtmlTag` after its creation:
+**2. Adding children after creation:**
 
 ```php
 $list = HtmlTag::ul();
 $list->appendChild(HtmlTag::li('Item 2'));
-$list->prependChild(HtmlTag::li('Item 1')); // Prepends
-$list->appendChild('Just text, will be wrapped in HtmlText');
-
-// $list will render: <ul><li>Item 1</li><li>Item 2</li>Just text, will be wrapped in HtmlText</ul>
+$list->prependChild(HtmlTag::li('Item 1')); // Adds to the beginning of the list
 ```
 
-### Attribute Management
+### Managing Attributes
 
-The `Attributes` trait provides a rich API for managing HTML attributes on `HtmlTag` instances.
-
-#### Generic Attributes (`setAttribute`, `getAttribute`, `hasAttribute`, `removeAttribute`)
+#### Generic Attributes
 
 ```php
-$tag = HtmlTag::div()->setAttribute('data-custom', 'value123');
-$tag->setAttribute('title', 'My Tooltip');
+$tag = HtmlTag::div()
+    ->setAttribute('title', 'My Title')
+    ->setAttribute('lang', 'en');
 
-echo $tag->getAttribute('data-custom'); // value123
-var_dump($tag->hasAttribute('title')); // true
-
-$tag->removeAttribute('data-custom');
-var_dump($tag->hasAttribute('data-custom')); // false
+echo $tag->getAttribute('title'); // "My Title"
+var_dump($tag->hasAttribute('lang')); // true
+$tag->removeAttribute('lang');
 ```
 
-#### ID (`setId`, `getId`)
+#### The `id` Attribute
 
 ```php
 $section = HtmlTag::section()->setId('main-content');
-echo $section->getId(); // main-content
+echo $section->getId(); // "main-content"
 ```
 
-#### CSS Classes (`setClass`, `addClass`, `removeClass`, `toggleClass`, Class Instance Management)
-
-`HtmlTag` internally uses an `HtmlClass` instance to manage its classes.
+#### CSS Classes
 
 ```php
-use AhjDev\PhpTagMaker\HtmlClass;
-
 $button = HtmlTag::button('Submit');
 
-// Set initial classes (replaces any existing)
-$button->setClass('btn', 'btn-primary'); // Becomes "btn btn-primary"
+// Replace all classes
+$button->setClass('btn', 'btn-primary');
 
-// Add more classes
-$button->addClass('btn-large', 'active'); // Becomes "btn btn-primary btn-large active"
+// Add a new class
+$button->addClass('btn-large'); // "btn btn-primary btn-large"
 
 // Remove a class
-$button->removeClass('btn-large'); // Becomes "btn btn-primary active"
+$button->removeClass('btn-large'); // "btn btn-primary"
 
-// Toggle classes
-$button->toggleClass('active'); // 'active' removed -> "btn btn-primary"
-$button->toggleClass('active', 'focus'); // 'active' added, 'focus' added -> "btn btn-primary active focus"
-
-// Get class string or array
-var_dump($button->getClass()); // ['btn', 'btn-primary', 'active', 'focus'] (or string if only one)
-
-// Direct manipulation of the HtmlClass object (if needed, and made accessible)
-// $button->class is the HtmlClass instance in the enhanced version
-$button->class->add('another-via-instance');
+// Toggle a class
+$button->toggleClass('active'); // The 'active' class is added
+$button->toggleClass('active'); // The 'active' class is removed
 ```
 
-When creating tags like `div` using the static helper, you can pass an `HtmlClass` instance or a string for classes:
+#### Boolean Attributes
 
-```php
-$div1 = HtmlTag::div(new HtmlClass('class1', 'class2'), 'Content'); //
-$div2 = HtmlTag::div('class3 class4', 'More content'); //
-```
-
-#### Boolean Attributes (`setBooleanAttribute`, `disabled`, `checked`)
-
-Boolean attributes are present if true, absent if false.
+These attributes are added to the tag if `true` and removed if `false`.
 
 ```php
 $input = HtmlTag::input('checkbox')
-    ->setBooleanAttribute('checked', true) // Or simply ->checked()
-    ->disabled(); // Or ->disabled(true)
+    ->checked()      // Adds checked="checked"
+    ->disabled();     // Adds disabled="disabled"
 
-// To remove:
-$input->disabled(false); // 'disabled' attribute is removed
+// To remove
+$input->disabled(false); // The 'disabled' attribute is removed
 ```
 
-#### Data Attributes (`setDataAttribute`, `getDataAttribute`, `removeDataAttribute`, `hasDataAttribute`)
-
-Manage `data-*` attributes easily.
+#### `data-*` Attributes
 
 ```php
 $item = HtmlTag::li('My Item')
     ->setDataAttribute('item-id', '123')
     ->setDataAttribute('item-type', 'product');
 
-echo $item->getDataAttribute('item-id'); // 123
-$item->removeDataAttribute('item-type');
+echo $item->getDataAttribute('item-id'); // "123"
 ```
 
-#### ARIA Attributes (`setAriaAttribute`, `getAriaAttribute`, `removeAriaAttribute`, `hasAriaAttribute`)
+#### `aria-*` Attributes
 
-Manage `aria-*` attributes for accessibility.
+To improve accessibility:
 
 ```php
 $alert = HtmlTag::div()
     ->setAriaAttribute('role', 'alert')
     ->setAriaAttribute('live', 'assertive');
-
-echo $alert->getAriaAttribute('role'); // alert
 ```
 
-#### Iterating Attributes (`iterAttributes`)
+### Changing the Tag Name
 
-You can iterate over all attributes of an element. Each attribute is a `DOMAttr` object.
-
-```php
-$tagWithAttrs = HtmlTag::div()
-    ->setId('myDiv')
-    ->setClass('container')
-    ->setDataAttribute('info', 'some-data');
-
-foreach ($tagWithAttrs->iterAttributes() as $attr) {
-    // $attr is an instance of \DOMAttr
-    echo $attr->nodeName . ': ' . $attr->nodeValue . "\n";
-}
-// Output might be:
-// id: myDiv
-// class: container
-// data-info: some-data
-```
-
-### Changing Tag Name (`setName`)
-
-You can change the tag name of an existing `HtmlTag` instance. Attributes and children are preserved.
+You can change a tag's name after it has been created. Attributes and children are preserved.
 
 ```php
-$element = HtmlTag::div(HtmlTag::p('Content inside.'))->setClass('box');
-echo TagMaker::build($element); // <div class="box"><p>Content inside.</p></div>
-
-$element->setName('section'); // Change to <section>
-$element->addClass('important');
-echo TagMaker::build($element); // <section class="box important"><p>Content inside.</p></section>
+$element = HtmlTag::div(null, 'Content')->setClass('box');
+$element->setName('section'); // The tag changes from <div> to <section>
 ```
 
 ### Output Formatting
 
-The `TagMaker` can format the HTML output with indentation and newlines for better readability.
+To make the HTML output more readable in a development environment, you can enable formatting.
 
 ```php
 $maker = new TagMaker();
-$maker->formatOutput(true); // Enable formatting
-
+$maker->formatOutput(true);
 $html = $maker->run(
-    HtmlTag::ul(
-        HtmlTag::li('Item 1'),
-        HtmlTag::li('Item 2')
-    )
+    HtmlTag::ul(HtmlTag::li('Item 1'), HtmlTag::li('Item 2'))
 );
-// $html will be nicely formatted.
-```
-
-### Specialized Nodes
-
-#### `HtmlText` (Unscaped Text)
-
-For adding plain text content. `DOMDocument` will handle necessary escaping of special HTML characters (e.g., `<`, `>`, `&`) during rendering.
-
-```php
-use AhjDev\PhpTagMaker\Node\HtmlText;
-
-$textNode = HtmlText::make('This text might contain < & > characters.');
-$div = HtmlTag::div($textNode);
-// Output: <div>This text might contain &lt; &amp; &gt; characters.</div>
-```
-
-#### `EscapedText` (CDATA)
-
-For content that should explicitly not be parsed by the HTML parser, wrapped in `<![CDATA[...]]>`.
-
-```php
-use AhjDev\PhpTagMaker\Node\EscapedText;
-
-$scriptContent = EscapedText::make('if (a < b && b > c) { console.log("CDATA"); }');
-$scriptTag = HtmlTag::script($scriptContent);
-// Output: <script><![CDATA[if (a < b && b > c) { console.log("CDATA"); }]]></script>
-```
-
-#### `HtmlTagMulti` (Nested Tags)
-
-Creates a sequence of nested tags with the same content at the deepest level.
-
-```php
-use AhjDev\PhpTagMaker\Node\HtmlTagMulti;
-
-$nested = HtmlTagMulti::make(['div', 'p', 'strong'], 'Deeply nested text');
-// Output: <div><p><strong>Deeply nested text</strong></p></div>
-
-$nestedWithNode = HtmlTagMulti::make(
-    ['section', 'article'],
-    HtmlTag::h1('Title'), 'Followed by text.'
-);
-// Output: <section><article><h1>Title</h1>Followed by text.</article></section>
+// The output will be displayed with indentation.
 ```
 
 ## Examples
 
-Please see the `examples/` directory for more usage scenarios:
+For more practical scenarios, Please see the `examples/` directory for more usage scenarios:
 
   * `examples/1-SimpleMaker.php`: Basic usage.
   * `examples/2-FormatOutput.php`: Demonstrates output formatting and various node types.
   * `examples/3-AdvancedUsage.php`: Showcases enhanced attribute handling, child management, and `setName`.
 
-## Contributing
+## Contributing Guide
 
-Contributions are welcome\! Please feel free to submit pull requests or open issues.
-If you plan to contribute, please ensure your code adheres to the existing coding style (you can use PHP CS Fixer with the provided configuration `/.php-cs-fixer.dist.php`).
+Submissions intended to enhance this software are permissible under the condition that they conform to established project protocols. All proposed modifications shall be tendered via Pull Requests for subsequent formal review. The reporting of software anomalies or functional deficiencies is to be registered within the designated "Issues" section of the repository.
 
-Development scripts (from `composer.json`):
+For the purposes of local development and validation, a set of Composer scripts is provided. Adherence to these scripts is requisite for the maintenance of code quality and stylistic uniformity.
 
-  * `composer cs`: Check code style.
-  * `composer cs-fix`: Fix code style.
-  * `composer build`: Alias for `cs-fix`.
-
-(Consider adding guidelines for running tests if you implement a test suite.)
+  * **`composer test`**: Executes the PHPUnit test suite to validate the functionality of the codebase.
+  * **`composer cs`**: Initiates a check for conformance with the established coding style standards.
+  * **`composer cs-fix`**: Engages a process to automatically rectify any deviations from the established coding style.
+  * **`composer analyse`**: Commences a static analysis of the source code, utilizing the PHPStan tool, for the purpose of identifying potential defects and logical inconsistencies prior to runtime execution.
 
 ## License
 
-PhpTagMaker is licensed under the GPL-3.0-only License. See the [LICENSE](https://www.google.com/search?q=LICENSE) file for details (you would need to add a https://www.google.com/search?q=LICENSE file with the GPL-3.0 text).
+This library is released under the **GPL-3.0-only** License. See the [LICENSE](https://www.google.com/search?q=LICENSE) file for more details.
