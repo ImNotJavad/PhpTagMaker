@@ -35,7 +35,7 @@ final class HtmlTagTest extends TestCase
         $tag = HtmlTag::a('https://example.com', 'Click me')
             ->setId('my-link')
             ->setAttribute('target', '_blank');
-        
+
         $expected = '<a href="https://example.com" id="my-link" target="_blank">Click me</a>';
         $this->assertXmlStringEqualsXmlString($expected, TagMaker::build($tag));
     }
@@ -84,7 +84,7 @@ final class HtmlTagTest extends TestCase
         $tag = HtmlTag::hr();
         $tag->prependChild(HtmlTag::span('A caption'));
     }
-    
+
     /**
      * FIX: This test now inspects the DOM attributes directly instead of comparing strings.
      * This is more robust and avoids HTML vs. XML parsing issues.
@@ -92,10 +92,10 @@ final class HtmlTagTest extends TestCase
     public function testBooleanAttributeHandling(): void
     {
         $input = HtmlTag::input('checkbox')->checked()->disabled();
-        
+
         // Convert the tag to a DOMElement to inspect its properties.
         $domElement = $input->toDomNode();
-        
+
         // Assert that the attributes exist and have the correct values.
         $this->assertTrue($domElement->hasAttribute('checked'));
         $this->assertEquals('checked', $domElement->getAttribute('checked'));
