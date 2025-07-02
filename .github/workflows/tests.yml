@@ -1,60 +1,36 @@
-# This is a GitHub Actions workflow file.
-# It defines a set of jobs that will be run automatically on every push or pull request
-# to the repository, ensuring code quality and preventing regressions.
-
 name: Run PHP Tests & Static Analysis
 
 on: [push, pull_request]
 
 jobs:
   test:
-    # The job will run on the latest version of Ubuntu.
     runs-on: ubuntu-latest
-
-    # This strategy block defines a build matrix.
-    # The job will be run multiple times, once for each specified PHP version.
-    # This ensures the library is compatible with a range of PHP environments.
     strategy:
       matrix:
         php-version: ['8.0', '8.1', '8.2', '8.3']
-
     steps:
-      # Step 1: Check out the repository code so the workflow can access it.
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Set up the PHP environment for the current job in the matrix.
-      # The `shivammathur/setup-php` action is a popular and robust tool for this.
       - name: Setup PHP v${{ matrix.php-version }}
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
-          # Required extensions for the project and its dependencies.
           extensions: dom, mbstring
-          # Enable code coverage driver (Xdebug).
           coverage: xdebug
-
-      # Step 3: Install Composer dependencies.
-      # `--prefer-dist` fetches zipped versions, which is faster for CI.
-      # `--no-progress` disables the progress bar for cleaner logs.
       - name: Install Composer dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest
-
-      # Step 4: Run the PHPUnit test suite.
-      # This command executes the tests defined in the `tests` directory.
+        run: |
+          if [[ ${{ matrix.php-version }} < '8.2' ]]; then
+            composer update --prefer-dist --no-progress --no-suggest
+          else
+            composer install --prefer-dist --no-progress --no-suggest
+          fi
       - name: Run tests
         run: ./vendor/bin/phpunit
 
-      # Step 5: Run PHPStan for static analysis.
-      # This step only runs on the latest PHP version to avoid redundant checks.
-      # It helps find potential bugs without actually running the code.
       - name: Run static analysis
         if: matrix.php-version == '8.3'
-        run: ./vendor/bin/phpstan analyse --level=8 src
-
-      # Step 6: Check for coding style violations using PHP-CS-Fixer.
-      # This also only runs on the latest PHP version.
-      # The `--dry-run` flag reports issues without modifying files.
+        run: ./vendor/bin/phpstan analyse src tests --level=8
       - name: Check coding style
         if: matrix.php-version == '8.3'
         run: composer cs
