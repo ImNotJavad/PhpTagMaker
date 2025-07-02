@@ -12,11 +12,11 @@ jobs:
     runs-on: ubuntu-latest
 
     # This strategy block defines a build matrix.
-    # FIX: The matrix now starts from PHP 8.1, which is the minimum version
-    # required by the project's dependencies (PHPUnit 10).
+    # FIX: The matrix now starts from PHP 8.2, which is the minimum version
+    # required by the project's locked dependencies (PHPUnit 11).
     strategy:
       matrix:
-        php-version: ['8.1', '8.2', '8.3']
+        php-version: ['8.2', '8.3']
 
     steps:
       # Step 1: Check out the repository code.
@@ -32,7 +32,7 @@ jobs:
           coverage: xdebug
 
       # Step 3: Install Composer dependencies using the lock file.
-      # This is now consistent across all jobs.
+      # This will now work consistently across all jobs in the matrix.
       - name: Install Composer dependencies
         run: composer install --prefer-dist --no-progress --no-suggest
 
