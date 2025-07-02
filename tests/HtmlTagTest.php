@@ -57,7 +57,6 @@ final class HtmlTagTest extends TestCase
     {
         $element = HtmlTag::div(null, 'Content')->setClass('box');
         $element->setName('section');
-
         $this->assertXmlStringEqualsXmlString('<section class="box">Content</section>', TagMaker::build($element));
         $this->assertSame('section', $element->getName());
     }
