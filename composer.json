@@ -11,6 +11,9 @@
         {
             "name" : "AmirHossein Jafari",
             "email": "amirhosseinjafari8228@gmail.com"
+        },{
+             "name" : "Seyed Mohammad Javad Mousavi",
+            "email": "mou17savi@gmail.com"
         }
     ],
     "autoload": {
@@ -22,7 +25,8 @@
         "ext-dom"  : "*"
     },
     "require-dev": {
-        "amphp/php-cs-fixer-config": "^2"
+        "amphp/php-cs-fixer-config": "^2",
+        "phpunit/phpunit": "^12.2"
     },
     "scripts": {
         "build": [

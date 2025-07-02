@@ -26,7 +26,7 @@ trait DefaultTags
      */
     public static function div(HtmlClass|string $class = null, Node|string ...$value): self
     {
-        $tag = HtmlTag::make('div', ...$value);
+        $tag = HtmlTag::make('div', ...$value); 
         if ($class) {
             $tag->class->merge($class);
         }
